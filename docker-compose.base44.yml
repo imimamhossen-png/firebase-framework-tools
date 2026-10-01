@@ -1,0 +1,26 @@
+services:
+  web:
+    image: node:22-bookworm-slim
+    working_dir: /app/starters/nextjs/basic
+    volumes:
+      # Bind-mount the whole repo so the starter app source is live-editable.
+      - ./:/app
+      # Keep node_modules inside the container, not overwritten by a host dir.
+      - web_node_modules:/app/starters/nextjs/basic/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - BASE44_PUBLIC_HOST_SUFFIX=${BASE44_PUBLIC_HOST_SUFFIX}
+      # Next.js dev server must accept the preview's external hostname.
+      - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=${BASE44_PUBLIC_HOST_SUFFIX}
+    command: ["sh", "-ec", "npm ci && exec npx next dev -H 0.0.0.0 -p 3000"]
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: on-failure
+
+volumes:
+  web_node_modules:
